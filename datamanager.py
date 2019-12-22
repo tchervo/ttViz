@@ -53,7 +53,11 @@ def save_tweets(topic: str, do_search=True, to_save=[]):
         tweets = tw.Cursor(api.search, q=topic + ' -filter:retweets', lang="en", result_type='popular').items(100)
 
         for tweet in tweets:
-            tweet_text.append(tweet.text)
+            if bool(tweet.truncated):
+                tweet_text.append(tweet.extended_tweet.full_text)
+            else:
+                tweet_text.append(tweet.text)
+
             tweet_ids.append(tweet.id)
             tweet_favorites.append(int(tweet.favorite_count))
             tweet_retweets.append(int(tweet.retweet_count))
@@ -109,7 +113,7 @@ def get_tweets_for_user(username: str, filter_retweets=True) -> [str]:
     tweets = []
 
     try:
-        user = api.get_user(username)
+        user = api.get_user(username, tweet_mode='extended')
     except tw.TweepError as error:
         print(f'Could not find user with username: {username} because {error.reason}')
         print(error.api_code)
@@ -128,31 +132,31 @@ def get_tweets_for_user(username: str, filter_retweets=True) -> [str]:
 
 
 # Assembles a pandas dataframe out of the frequency of specific words - Currently unused
-# def build_dataframe(data: []) -> pd.DataFrame:
-#     word_counter = {}
-#     word_list = []
-#     freq_list = []
-#
-#     for word in data:
-#
-#         if word in word_counter.keys():
-#             new_count = int(word_counter[word]) + 1
-#             word_counter[word] = new_count
-#         else:
-#             word_counter[word] = 1
-#
-#     for word in word_counter.keys():
-#         word_list.append(word)
-#     for freq in word_counter.values():
-#         freq_list.append(freq)
-#
-#     ret_frame = pd.DataFrame({"word": word_list, "freq": freq_list}).sort_values(by=["freq"], ascending=False)
-#
-#     return ret_frame
+def build_frequency_frame(data: []) -> pd.DataFrame:
+    word_counter = {}
+    word_list = []
+    freq_list = []
+
+    for word in data:
+
+        if word in word_counter.keys():
+            new_count = int(word_counter[word]) + 1
+            word_counter[word] = new_count
+        else:
+            word_counter[word] = 1
+
+    for word in word_counter.keys():
+        word_list.append(word)
+    for freq in word_counter.values():
+        freq_list.append(freq)
+
+    ret_frame = pd.DataFrame({"word": word_list, "freq": freq_list}).sort_values(by=["freq"], ascending=False)
+
+    return ret_frame
 
 
 # Removes 'RT' and '#' from tweets and selects for meaningful words
-def strip_tweet(whole_tweet_list: str) -> [str]:
+def strip_tweets(whole_tweet_list: str) -> [str]:
     stripped_tweet = []
 
     for whole_tweet in whole_tweet_list:
@@ -166,3 +170,39 @@ def strip_tweet(whole_tweet_list: str) -> [str]:
                 stripped_tweet.append(phrase)
 
     return stripped_tweet
+
+
+def search_network(root_user: str) -> []:
+    network_ids = []
+    network_tweets = []
+
+    try:
+        user = api.get_user(root_user, tweet_mode='extended')
+    except tw.TweepError as error:
+        print(f'Could not find user with username: {root_user} because {error.reason}')
+        print(error.api_code)
+
+    network_ids.append(user.id)
+
+    for follower_id in tw.Cursor(api.followers_ids, id=root_user).items(50):
+        try:
+            follower = api.get_user(follower_id)
+        except tw.TweepError as error:
+            print(f'An error occurred trying to find follower with ID: {follower_id} because {error.reason}')
+
+        if follower.protected is not True:
+            network_ids.append(follower_id)
+
+    for id in network_ids:
+        net_user_tl = api.user_timeline(id)
+
+        for tweet in net_user_tl:
+            if str(tweet.text).startswith('RT') is False:
+                network_tweets.append(tweet.text)
+
+    network_words = strip_tweets(network_tweets)
+    network_frame = build_frequency_frame(network_words)
+
+    network_frame.to_csv(make_file_name_for_search(search=root_user, type='network'))
+
+    return network_frame

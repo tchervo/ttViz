@@ -74,7 +74,7 @@ def main():
     account_data = load_account_data()
     login(account_data)
 
-    mode = input("Select search mode: Topic (1) or User (2)")
+    mode = input("Select search mode: Topic (1), User (2), or Network (3): ")
 
     if mode == '1':
         topic = input("Select a topic to search: ")
@@ -87,6 +87,9 @@ def main():
     elif mode == '2':
         username = input("Input username: ")
         dm.save_tweets(topic=username, do_search=False, to_save=dm.get_tweets_for_user(username))
+    elif mode == '3':
+        username = input("Input username: ")
+        dm.search_network(username)
     else:
         print('Invalid input!')
         main()
@@ -98,53 +101,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-# Old main method, currently being replaced
-# login(load_account_data())
-#
-#     mode = int(input("Select Mode (1 - Frequency | 2 - Association): "))
-#     should_save_tweets = input("Save tweets?: ")
-#     should_save_words = input("Save words?: ")
-#     search = input("Input search term: ")
-#     frames = []
-#
-#     if True:
-#         if len(search.split(",")) >= 2:
-#             for term in search.split(","):
-#                 dm.save_tweets(topic=term)
-#
-#                 tweets = search_tweets(topic=term, load_tweets=True)
-#                 data = dm.strip_tweet(tweets)
-#                 frame = None
-#
-#                 if mode == 1:
-#                     frame = dm.build_dataframe(data)
-#                 elif mode == 2:
-#                     frame = dm.build_dataframe(data)
-#
-#                 frames.append(frame)
-#         else:
-#             print("YES")
-#             dm.save_tweets(topic=search)
-#             tweets = dm.load_tweets(topic=search)
-#             data = dm.strip_tweet(tweets)
-#             frame = None
-#
-#             if mode == 1:
-#                 frame = dm.build_dataframe(data)
-#             elif mode == 2:
-#                 frame = dm.build_dataframe(data)
-#
-#             frames.append(frame)
-#
-#     for tweet in get_tweets_for_user(input("Username: ")):
-#         print(tweet)
-#
-#     for frame in frames:
-#         print(frame.head(30))
-#         print(frame.tail(30))
-#
-#         if True:
-#             print("Saving Frame!!!")
-#             for term in search.split(','):
-#                 frame.to_csv(term.lower().replace(' ', '_') + "_words.csv")
