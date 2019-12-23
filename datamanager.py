@@ -1,7 +1,7 @@
 import pandas as pd
 from nltk.corpus import stopwords
+
 import TweetPlot
-import scipy as sci
 
 tw = TweetPlot.tw
 api = TweetPlot.api
@@ -46,7 +46,6 @@ def save_tweets(topic: str, do_search=True, to_save=[]):
     tweet_retweets = []
     tweet_screen_names = []
     tweet_times = []
-    tweet_dates = []
     save_file = make_file_name_for_search(topic)
 
     if do_search:
@@ -172,7 +171,7 @@ def strip_tweets(whole_tweet_list: str) -> [str]:
     return stripped_tweet
 
 
-def search_network(root_user: str) -> []:
+def search_network(root_user: str, should_save=True) -> []:
     network_ids = []
     network_tweets = []
 
@@ -203,6 +202,7 @@ def search_network(root_user: str) -> []:
     network_words = strip_tweets(network_tweets)
     network_frame = build_frequency_frame(network_words)
 
-    network_frame.to_csv(make_file_name_for_search(search=root_user, type='network'))
+    if should_save:
+        network_frame.to_csv(make_file_name_for_search(search=root_user, type='network'))
 
     return network_frame

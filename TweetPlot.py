@@ -2,8 +2,8 @@ import os
 import unicodedata
 
 import pandas as pd
-import scipy as sci
 import tweepy as tw
+
 import datamanager as dm
 
 consumer_key = str(os.getenv("CONSUMER_KEY"))
@@ -53,23 +53,6 @@ def login(account_data: pd.DataFrame):
         auth.set_access_token(a_t, a_s)
 
 
-# # Loads tweets either from file (default) or from Twitter - Currently unused
-# def search_tweets(topic: str, load_tweets=True) -> list:
-#     tweet_text = []
-#
-#     if load_tweets:
-#         tweet_text = dm.load_tweets(topic)
-#     else:
-#         print("Loading Twitter!")
-#         print(topic)
-#         tweets = tw.Cursor(api.search, q=topic).items(100)
-#
-#         for tweet in tweets:
-#             tweet_text.append(tweet.text)
-#
-#     print(len(tweet_text))
-#     return tweet_text
-
 def main():
     account_data = load_account_data()
     login(account_data)
@@ -98,6 +81,7 @@ def main():
         main()
     else:
         print("Exiting...")
+
 
 if __name__ == '__main__':
     main()
