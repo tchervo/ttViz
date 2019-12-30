@@ -61,7 +61,7 @@ def save_tweets(topic: str, do_search=True, to_save=[]):
         tweets = tw.Cursor(api.search, q=topic + ' -filter:retweets', lang='en', result_type='popular').items(100)
 
         for tweet in tweets:
-            if tweet.user.protected is not True and tweet.user.default_profile is not True:
+            if tweet.user.protected is not True:
                 tweet_text.append(tweet.text)
                 tweet_ids.append(tweet.id)
                 tweet_favorites.append(int(tweet.favorite_count))
@@ -129,7 +129,7 @@ def get_tweets_for_user(username: str, filter_retweets=True) -> [str]:
         print(error.api_code)
         tweetplot.repeat_menu()
 
-    if user.protected is not True and user.default_profile is not True:
+    if user.protected is not True:
         if filter_retweets:
             for tweet in api.user_timeline(user.id):
                 if str(tweet.text).startswith('RT') is False:
@@ -203,7 +203,7 @@ def search_network(root_user: str, should_save=True) -> []:
         except tw.TweepError as error:
             print(f'An error occurred trying to find follower with ID: {follower_id} because {error.reason}')
 
-        if follower.protected is not True and follower.default_profile is not True:
+        if follower.protected is not True:
             network_ids.append(follower_id)
 
     for id_ in network_ids:
@@ -230,7 +230,7 @@ def screen_names_from_ids(id_list: []) -> [str]:
         try:
             user = api.get_user(user_id)
 
-            if user.default_profile is not True and user.protected is not True:
+            if user.protected is not True:
                 name_list.append(user.screen_name)
         except tw.TweepError as error:
             print(f'Could not find user with ID: {user_id} because {error.reason}')
@@ -246,7 +246,7 @@ def build_user_frame(identifier, should_save=False):
         print(f'Could not find user with ID: {identifier} because {error.reason}')
         print(error.api_code)
 
-    if user.protected is not True and user.default_profile is not True:
+    if user.protected is not True:
         tweets = get_tweets_for_user(user.screen_name, filter_retweets=False)
         favorites = []
 

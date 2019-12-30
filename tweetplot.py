@@ -85,8 +85,10 @@ def main():
 
         topic_tweets_frame.to_csv(freq_file_name)
 
+        plot_tweets = topic_tweets_frame[topic_tweets_frame.freq >= 3]
+
         if should_plot:
-            plotter.build_plot(topic_tweets_frame, 'word', 'freq', topic)
+            plotter.build_bar_plot(plot_tweets, 'word', 'freq', topic)
 
     elif mode == '2':
         username = input('Input username: ')
@@ -95,7 +97,7 @@ def main():
         ut_frame = pd.read_csv(dm.make_file_name_for_search(username))
 
         if should_plot:
-            plotter.build_plot(ut_frame, 'favorites', 'retweets', f'@{username}')
+            plotter.build_scatter_plot(ut_frame, 'favorites', 'retweets', f'@{username}')
     elif mode == '3':
         username = input('Input username: ')
         dm.search_network(username)
