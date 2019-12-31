@@ -1,6 +1,7 @@
 import os
 
 import pandas as pd
+import scipy.stats as stats
 from nltk.corpus import stopwords
 
 import tweetplot
@@ -58,7 +59,7 @@ def save_tweets(topic: str, do_search=True, to_save=[]):
     save_file = make_file_name_for_search(topic)
 
     if do_search:
-        tweets = tw.Cursor(api.search, q=topic + ' -filter:retweets', lang='en', result_type='popular').items(100)
+        tweets = tw.Cursor(api.search, q=topic + ' -filter:retweets', lang='en', result_type='popular').items(200)
 
         for tweet in tweets:
             if tweet.user.protected is not True:
@@ -239,25 +240,20 @@ def screen_names_from_ids(id_list: []) -> [str]:
     return name_list
 
 
-def build_user_frame(identifier, should_save=False):
-    try:
-        user = api.get_user(identifier, tweet_mode='extended')
-    except tw.TweepError as error:
-        print(f'Could not find user with ID: {identifier} because {error.reason}')
-        print(error.api_code)
+def is_normal_dist(data):
+    if len(data) < 20:
+        print('Kurtosis test is not valid for n < 20, so normal test cannot be run!')
 
-    if user.protected is not True:
-        tweets = get_tweets_for_user(user.screen_name, filter_retweets=False)
-        favorites = []
+        return None
+    else:
+        statistic, p_val = stats.normaltest(data, nan_policy='omit')
+
+        print(f'Statistic for normal test (k^2 + s^2): {statistic}')
+
+        if p_val < 0.05:
+            print(p_val)
+            return True
+        else:
+            return False
 
 
-
-# An object that sorts through a user network dataframe. Makes searching a little easier. Currently unimplemented
-class UserNetwork:
-    network_frame = None
-
-    def __init__(self, net_frame: pd.DataFrame):
-        network_frame = net_frame
-
-    def user_in_network(self, screen_name):
-        pass

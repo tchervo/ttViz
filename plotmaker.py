@@ -31,14 +31,26 @@ def build_scatter_plot(data: pd.DataFrame, explanatory: str, response: str, subj
 
     subject_file = '/' + subject.replace('@', '') + '/' + subject.replace('@', '') + '.png'
 
-    plt.savefig('subject_file.png', dpi=150)
-    plt.show()
+    if explan_var.empty is not True and response_var.empty is not True:
+        plt.savefig('subject_file.png', dpi=150)
+        plt.show()
+    else:
+        print("No tweets about this topic!")
 
 
 # Creates a bar plot using the user specified data and x_var, the name of the variable to be plotted
 # along the x-axis. Currently broken
 def build_bar_plot(data: pd.DataFrame, x_var: str, y_var: str, subject: str):
-    bar_plot = data.plot.bar(x=x_var, y=y_var, rot=0)
-    data.plot.show()
+    x_vals = data[x_var]
+    heights = data[y_var]
+
+    if x_vals.empty is True or heights.empty is True:
+        print("No tweets about this topic!")
+    else:
+        plt.bar(x=x_vals, height=heights)
+        plt.title(f'{y_var.capitalize()} of {x_var.capitalize()} Used When Tweeting About {subject.capitalize()}')
+        plt.xlabel(x_var.capitalize())
+        plt.ylabel(y_var.capitalize())
+        plt.show()
 
 

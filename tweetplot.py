@@ -1,6 +1,7 @@
 import os
 import unicodedata
 
+import numpy as np
 import pandas as pd
 import tweepy as tw
 
@@ -69,7 +70,7 @@ def main():
     account_data = load_account_data()
     login(account_data)
 
-    mode = input('Select search mode: Topic (1), User (2), or Network (3): ')
+    mode = input('Select search mode: Topic (1), User (2), Network (3), or run tests (4): ')
     should_plot = input('Plot results?: ').lower().startswith('y') is True
 
     if mode == '1':
@@ -101,6 +102,10 @@ def main():
     elif mode == '3':
         username = input('Input username: ')
         dm.search_network(username)
+    elif mode == '4':
+        test = np.random.randint(0, 100, 30)
+
+        print(dm.is_normal_dist(data=test))
     else:
         print('Invalid input!')
         main()
