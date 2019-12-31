@@ -41,11 +41,16 @@ def build_scatter_plot(data: pd.DataFrame, explanatory: str, response: str, subj
 # Creates a bar plot using the user specified data and x_var, the name of the variable to be plotted
 # along the x-axis. Currently broken
 def build_bar_plot(data: pd.DataFrame, x_var: str, y_var: str, subject: str):
-    x_vals = data[x_var]
-    heights = data[y_var]
+    if len(data[x_var]) > 10:
+        # Selects the first 10 rows (first list), then the first two columns(second list)
+        valid_data = data.iloc[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [0, 1]]
+    else:
+        valid_data = data
 
+    x_vals = valid_data[x_var]
+    heights = valid_data[y_var]
     if x_vals.empty is True or heights.empty is True:
-        print("No tweets about this topic!")
+        print("No tweets about this topic or not enough data!")
     else:
         plt.bar(x=x_vals, height=heights)
         plt.title(f'{y_var.capitalize()} of {x_var.capitalize()} Used When Tweeting About {subject.capitalize()}')

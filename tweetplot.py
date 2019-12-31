@@ -93,15 +93,30 @@ def main():
 
     elif mode == '2':
         username = input('Input username: ')
+        user_mode = input('Word frequency (1) or retweet/favorite relationship (2)?: ')
         user_tweets = dm.get_tweets_for_user(username)
-        dm.save_tweets(topic=username, do_search=False, to_save=user_tweets)
-        ut_frame = pd.read_csv(dm.make_file_name_for_search(username))
+
+        if user_mode == '1':
+            dm.save_tweets(username, do_search=False, to_save=user_tweets)
+            tweet_text = dm.load_tweets(username)
+            stripped_text = dm.strip_tweets(tweet_text)
+            user_tweet_frame = dm.build_frequency_frame(stripped_text)
+            user_tweet_frame = user_tweet_frame[user_tweet_frame.freq > 3]
+        else:
+            dm.save_tweets(topic=username, do_search=False, to_save=user_tweets)
+            ut_frame = pd.read_csv(dm.make_file_name_for_search(username))
 
         if should_plot:
-            plotter.build_scatter_plot(ut_frame, 'favorites', 'retweets', f'@{username}')
+            if user_mode == '1':
+                plotter.build_bar_plot(user_tweet_frame, 'word', 'freq', f'{username}s tweets')
+            else:
+                plotter.build_scatter_plot(ut_frame, 'favorites', 'retweets', username)
     elif mode == '3':
         username = input('Input username: ')
-        dm.search_network(username)
+        net_frame = dm.search_network(username)
+
+        if should_plot:
+            plotter.build_bar_plot(net_frame, 'word', 'freq', f'@{username}s network')
     elif mode == '4':
         test = np.random.randint(0, 100, 30)
 

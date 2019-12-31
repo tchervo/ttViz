@@ -185,7 +185,7 @@ def strip_tweets(whole_tweet_list: str) -> [str]:
 
 
 # Searches for a user, then selects 100 of that user's followers and builds a frequency map
-def search_network(root_user: str, should_save=True) -> []:
+def search_network(root_user: str, should_save=True) -> pd.DataFrame:
     network_ids = []
     network_tweets = []
 
