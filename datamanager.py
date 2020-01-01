@@ -239,6 +239,28 @@ def screen_names_from_ids(id_list: []) -> [str]:
 
     return name_list
 
+def build_user_frame(identifier: str) -> pd.DataFrame:
+    tl_tweets = get_tweets_for_user(identifier, filter_retweets=False)
+    favorited_tweets = tw.Cursor(api.favorites, id=identifier).items(20)
+    # All of the tweets, likes, and retweets on a user's profile
+    tweet_text = []
+    tweet_ids = []
+    tweet_screen_names = []
+
+    for tweet in tl_tweets:
+        tweet_text.append(tweet.text)
+        tweet_ids.append(tweet.id)
+        tweet_screen_names.append(tweet.user.screen_name)
+    for tweet in favorited_tweets:
+        tweet_text.append(tweet.text)
+        tweet_ids.append(tweet.id)
+        tweet_screen_names.append(tweet.user.screen_name)
+
+    frame_data = {'tweet_id': tweet_ids, 'text': tweet_text, 'screen_name': tweet_screen_names}
+    ret_frame = pd.DataFrame(frame_data)
+
+    return ret_frame
+
 
 def is_normal_dist(data):
     if len(data) < 20:

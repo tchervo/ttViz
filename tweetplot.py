@@ -1,7 +1,6 @@
 import os
 import unicodedata
 
-import numpy as np
 import pandas as pd
 import tweepy as tw
 
@@ -94,6 +93,7 @@ def main():
     elif mode == '2':
         username = input('Input username: ')
         user_mode = input('Word frequency (1) or retweet/favorite relationship (2)?: ')
+        profile_search = input('Search entire profile (1) or only user tweets (2)?: ') == '1'
         user_tweets = dm.get_tweets_for_user(username)
 
         if user_mode == '1':
@@ -102,9 +102,17 @@ def main():
             stripped_text = dm.strip_tweets(tweet_text)
             user_tweet_frame = dm.build_frequency_frame(stripped_text)
             user_tweet_frame = user_tweet_frame[user_tweet_frame.freq > 3]
-        else:
+        elif user_mode == '2':
             dm.save_tweets(topic=username, do_search=False, to_save=user_tweets)
             ut_frame = pd.read_csv(dm.make_file_name_for_search(username))
+
+        if profile_search:
+            user_frame = dm.build_user_frame(username)
+            user_frame.to_csv('test.csv')
+            whole_tweets = dm.load_tweets(username, from_file=False, frame=user_frame)
+            stripped_tweets = dm.strip_tweets(whole_tweets)
+            freq_frame = dm.build_frequency_frame(stripped_tweets)
+            plotter.build_bar_plot(freq_frame, 'word', 'freq', f'@{username}s profile')
 
         if should_plot:
             if user_mode == '1':
@@ -118,9 +126,7 @@ def main():
         if should_plot:
             plotter.build_bar_plot(net_frame, 'word', 'freq', f'@{username}s network')
     elif mode == '4':
-        test = np.random.randint(0, 100, 30)
-
-        print(dm.is_normal_dist(data=test))
+        pass
     else:
         print('Invalid input!')
         main()
