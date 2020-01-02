@@ -1,7 +1,6 @@
 import os
 
 import pandas as pd
-import scipy.stats as stats
 from nltk.corpus import stopwords
 
 import tweetplot
@@ -59,7 +58,7 @@ def save_tweets(topic: str, do_search=True, to_save=[]):
     save_file = make_file_name_for_search(topic)
 
     if do_search:
-        tweets = tw.Cursor(api.search, q=topic + ' -filter:retweets', lang='en', result_type='popular').items(200)
+        tweets = tw.Cursor(api.search, q=topic + ' -filter:retweets', lang='en', result_type='mixed').items(200)
 
         for tweet in tweets:
             if tweet.user.protected is not True:
@@ -143,7 +142,7 @@ def get_tweets_for_user(username: str, filter_retweets=True) -> [str]:
         return 'PRIVATE'
 
 
-# Assembles a pandas dataframe out of the frequency of specific words
+# Assembles a pandas dataframe out of the frequency of specific words.
 def build_frequency_frame(data: []) -> pd.DataFrame:
     word_counter = {}
     word_list = []
@@ -155,7 +154,8 @@ def build_frequency_frame(data: []) -> pd.DataFrame:
             new_count = int(word_counter[word]) + 1
             word_counter[word] = new_count
         else:
-            word_counter[word] = 1
+            # Accounts for capitalization variations
+            word_counter[word.lower()] = 1
 
     for word in word_counter.keys():
         word_list.append(word)
@@ -239,6 +239,7 @@ def screen_names_from_ids(id_list: []) -> [str]:
 
     return name_list
 
+
 def build_user_frame(identifier: str) -> pd.DataFrame:
     tl_tweets = get_tweets_for_user(identifier, filter_retweets=False)
     favorited_tweets = tw.Cursor(api.favorites, id=identifier).items(20)
@@ -260,22 +261,3 @@ def build_user_frame(identifier: str) -> pd.DataFrame:
     ret_frame = pd.DataFrame(frame_data)
 
     return ret_frame
-
-
-def is_normal_dist(data):
-    if len(data) < 20:
-        print('Kurtosis test is not valid for n < 20, so normal test cannot be run!')
-
-        return None
-    else:
-        statistic, p_val = stats.normaltest(data, nan_policy='omit')
-
-        print(f'Statistic for normal test (k^2 + s^2): {statistic}')
-
-        if p_val < 0.05:
-            print(p_val)
-            return True
-        else:
-            return False
-
-
