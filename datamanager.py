@@ -1,5 +1,6 @@
 import os
 
+import nltk
 import pandas as pd
 from nltk.corpus import stopwords
 
@@ -131,13 +132,13 @@ def get_tweets_for_user(username: str, filter_retweets=True) -> [str]:
 
     if user.protected is not True:
         if filter_retweets:
-            for tweet in api.user_timeline(user.id):
+            for tweet in api.user_timeline(user.id, count=100):
                 if str(tweet.text).startswith('RT') is False:
-                    tweets.append(tweet)
+                    tweets.append(str(tweet).encode('utf-8'))
 
             return tweets
         else:
-            return api.user_timeline(user.id)
+            return api.user_timeline(user.id, count=100)
     else:
         return 'PRIVATE'
 
@@ -179,7 +180,8 @@ def strip_tweets(whole_tweet_list: str) -> [str]:
                 if phrase.lower() in stopwords.words('english'):
                     phrase = 'pass'
             if phrase != 'pass':
-                stripped_tweet.append(phrase)
+
+                stripped_tweet.append(phrase.encode('utf-8'))
 
     return stripped_tweet
 
@@ -214,7 +216,7 @@ def search_network(root_user: str, should_save=True) -> pd.DataFrame:
             if str(tweet.text).startswith('RT') is False:
                 network_tweets.append(tweet.text)
 
-    network_words = strip_tweets(network_tweets)
+    network_words = select_nouns(network_tweets)
     network_frame = build_frequency_frame(network_words)
 
     if should_save:
@@ -242,7 +244,7 @@ def screen_names_from_ids(id_list: []) -> [str]:
 
 def build_user_frame(identifier: str) -> pd.DataFrame:
     tl_tweets = get_tweets_for_user(identifier, filter_retweets=False)
-    favorited_tweets = tw.Cursor(api.favorites, id=identifier).items(20)
+    favorited_tweets = tw.Cursor(api.favorites, id=identifier).items(100)
     # All of the tweets, likes, and retweets on a user's profile
     tweet_text = []
     tweet_ids = []
@@ -260,4 +262,21 @@ def build_user_frame(identifier: str) -> pd.DataFrame:
     frame_data = {'tweet_id': tweet_ids, 'text': tweet_text, 'screen_name': tweet_screen_names}
     ret_frame = pd.DataFrame(frame_data)
 
+    ret_frame.to_csv(make_file_name_for_search(identifier))
+
     return ret_frame
+
+
+def select_nouns(tweets: []) -> [str]:
+    nouns = []
+
+    for text in tweets:
+        token_sentences = nltk.sent_tokenize(text)
+
+        for sentence in token_sentences:
+            words = nltk.word_tokenize(str(sentence))
+            for word, code in nltk.pos_tag(words):
+                if code.startswith('NN') and word.isalnum() and len(word) > 1 and word != 'https':
+                    nouns.append(word)
+
+    return nouns

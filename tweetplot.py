@@ -49,7 +49,6 @@ def login(account_data: pd.DataFrame):
             pd.DataFrame(account_data).to_csv('account_plot.csv')
         except tw.TweepError or IOError:
             print('An error occurred during authorization!')
-            repeat_menu()
     else:
         a_t = str(account_data.iat[0, 1]).replace('b', '', 1).replace("'", '')
         a_s = str(account_data.iat[0, 2]).replace('b', '', 1).replace("'", '')
@@ -59,21 +58,18 @@ def login(account_data: pd.DataFrame):
 
 # Creates a path to an image to be posted
 def make_path_for_image(image_topic: str) -> str:
-    image_dir = os.getcwd() + '/' + image_topic.lower().replace(' ', '_') + '/'
-    image_filename = image_topic.lower().replace(' ', '_') + '.png'
+    file_name = os.getcwd() + '/' + image_topic + '/' + image_topic.lower().replace(' ', '_') + '_plot.png'
 
-    return image_dir + image_filename
+    return file_name
 
 
 # Post a tweet to the currently authenticated account
 def post_tweet(text: str, with_image=True, image_name=''):
     image_path = make_path_for_image(image_name)
+    print(image_path)
 
     if with_image:
-        try:
-            api.update_with_media(filename=image_path, status=text)
-        except tw.TweepError as error:
-            print(f'Could not update user status because {error.response}')
+        api.update_with_media(image_path, status=text)
     else:
         try:
             api.update_status(status=text)
@@ -100,7 +96,7 @@ def process_command(command: str, args=[]):
         plotter = PlotMaker(f'Frequency of Words Used When Tweeting About {topic.capitalize()}')
 
         topics_tweets = dm.load_tweets(topic=topic, from_file=False, frame=topic_frame)
-        topic_tweets_stripped = dm.strip_tweets(topics_tweets)
+        topic_tweets_stripped = dm.select_nouns(topics_tweets)
         freq_file_name = dm.make_file_name_for_search(topic, type='freq')
         topic_tweets_frame = dm.build_frequency_frame(topic_tweets_stripped)
 
@@ -119,7 +115,7 @@ def process_command(command: str, args=[]):
         if user_mode == '1':
             user_frame = dm.build_user_frame(username)
             whole_tweets = dm.load_tweets(username, from_file=False, frame=user_frame)
-            stripped_tweets = dm.strip_tweets(whole_tweets)
+            stripped_tweets = dm.select_nouns(whole_tweets)
             freq_frame = dm.build_frequency_frame(stripped_tweets)
         elif user_mode == '2':
             dm.save_tweets(username, do_search=False, to_save=user_tweets)
@@ -170,7 +166,14 @@ def main():
     elif mode == '3':
         process_command('network', [should_plot])
     elif mode == '4':
-        pass
+        post_text = input('Entire the text for your post: ')
+        graph_name = input('Select a graph to post: ')
+
+        if len(post_text) > 280:
+            print('Post is too long! Try again')
+        else:
+            print(graph_name)
+            post_tweet(post_text, image_name=graph_name)
     else:
         print('Invalid input!')
         main()

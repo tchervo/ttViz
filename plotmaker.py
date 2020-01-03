@@ -82,6 +82,9 @@ class PlotMaker:
             plt.xlabel(x_var.capitalize())
             plt.ylabel(y_var.capitalize())
 
+            # Ensures that all the words on the bar graph render properly
+            plt.gcf().set_size_inches(11, 5)
+
             if do_save:
                 file_name = self.make_file_name_for_plot(subject)
                 try:
