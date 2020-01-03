@@ -62,8 +62,8 @@ class PlotMaker:
         else:
             print("No tweets about this topic!")
 
-    # Creates a bar plot using the user specified data and x_var, the name of the variable to be plotted
-    # along the x-axis. Currently broken
+    # Creates a bar plot using the user specified data, the name of the variable to be plotted
+    # along the x-axis (x_var), and the heights of the bars (y_var).
     def build_bar_plot(self, data: pd.DataFrame, x_var: str, y_var: str, subject: str, do_save=True):
         print(self.title)
         if len(data[x_var]) > 10:
