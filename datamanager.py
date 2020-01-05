@@ -3,6 +3,7 @@ import os
 import nltk
 import pandas as pd
 from nltk.corpus import stopwords
+from nltk.tokenize.casual import TweetTokenizer
 
 import tweetplot
 
@@ -86,6 +87,7 @@ def save_tweets(topic: str, do_search=True, to_save=[]):
         tweet_frame = pd.DataFrame(data={'tweet_ID': tweet_ids, 'text': tweet_text, 'favorites': tweet_favorites,
                                          'retweets': tweet_retweets, 'screen_name': tweet_screen_names,
                                          'tweet_times': tweet_times})
+        print(tweet_frame)
         tweet_frame.to_csv(save_file)
 
 
@@ -134,12 +136,13 @@ def get_tweets_for_user(username: str, filter_retweets=True) -> [str]:
         if filter_retweets:
             for tweet in api.user_timeline(user.id, count=100):
                 if str(tweet.text).startswith('RT') is False:
-                    tweets.append(str(tweet).encode('utf-8'))
+                    tweets.append(tweet)
 
             return tweets
         else:
             return api.user_timeline(user.id, count=100)
     else:
+        print(f'{username} has a private account!')
         return 'PRIVATE'
 
 
@@ -245,6 +248,7 @@ def screen_names_from_ids(id_list: []) -> [str]:
 def build_user_frame(identifier: str) -> pd.DataFrame:
     tl_tweets = get_tweets_for_user(identifier, filter_retweets=False)
     favorited_tweets = tw.Cursor(api.favorites, id=identifier).items(100)
+
     # All of the tweets, likes, and retweets on a user's profile
     tweet_text = []
     tweet_ids = []
@@ -269,9 +273,10 @@ def build_user_frame(identifier: str) -> pd.DataFrame:
 
 def select_nouns(tweets: []) -> [str]:
     nouns = []
+    tweet_tokenizer = TweetTokenizer()
 
     for text in tweets:
-        token_sentences = nltk.sent_tokenize(text)
+        token_sentences = tweet_tokenizer.tokenize(text)
 
         for sentence in token_sentences:
             words = nltk.word_tokenize(str(sentence))
@@ -280,3 +285,4 @@ def select_nouns(tweets: []) -> [str]:
                     nouns.append(word)
 
     return nouns
+
