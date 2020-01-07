@@ -2,7 +2,6 @@ import os
 
 import nltk
 import pandas as pd
-from nltk.corpus import stopwords
 from nltk.tokenize.casual import TweetTokenizer
 
 import tweetplot
@@ -11,8 +10,14 @@ tw = tweetplot.tw
 api = tweetplot.api
 
 
-# Generates a file name in the search_terms_type.csv format
 def make_file_name_for_search(search: str, type='tweets') -> str:
+    """
+    Generates a file name in the search_terms_type.csv format
+    :param search: The name of the query. Can also be the desired name of the file
+    :param type: The type of data in this search. Is appended as _type to the end of the file.
+    :return: The path to the file as a string
+    """
+
     search_dir = os.getcwd() + f'/{search}/'
 
     if os.path.exists(search_dir) is False:
@@ -49,8 +54,15 @@ def make_file_name_for_search(search: str, type='tweets') -> str:
     return save_file
 
 
-# Saves tweets to a CSV file named after their topic
 def save_tweets(topic: str, do_search=True, to_save=[]):
+    """
+    Saves tweets to a CSV file named after their topic
+    :param topic: The topic to search if needed. Also becomes the save name for the file
+    :param do_search: Whether or not this function should search twitter first. Default is True
+    :param to_save: An array of tweets to save if do_search is False.
+    :return:
+    """
+
     tweet_text = []
     tweet_ids = []
     tweet_favorites = []
@@ -91,8 +103,15 @@ def save_tweets(topic: str, do_search=True, to_save=[]):
         tweet_frame.to_csv(save_file)
 
 
-# Loads tweets from CSV and returns an array of the tweets' text
 def load_tweets(topic: str, from_file=True, frame=pd.DataFrame) -> [str]:
+    """
+    Loads tweets from CSV and returns an array of the tweets' text
+    :param topic: Name of the file without .csv
+    :param from_file: Whether the tweets should be loaded from a file. Default True
+    :param frame: The dataframe to load the tweets from if from_file is False
+    :return: An array of the tweet's text as a string
+    """
+
     tweet_text = []
     file_name = make_file_name_for_search(topic)
 
@@ -109,6 +128,12 @@ def load_tweets(topic: str, from_file=True, frame=pd.DataFrame) -> [str]:
 
 
 def get_dataframe_from_file(file_name: str) -> pd.DataFrame:
+    """
+    Tries to create a pandas dataframe from a CSV file path.
+    :param file_name: The path of the file to be loaded.
+    :return: A pandas dataframe containing the information in the CSV file
+    """
+
     ret_frame = None
 
     try:
@@ -116,12 +141,18 @@ def get_dataframe_from_file(file_name: str) -> pd.DataFrame:
     except IOError as error:
         print(f'An error occured loading dataframe with name: {file_name}! (Wrong name?)')
         print(error)
-        tweetplot.repeat_menu()
 
     return ret_frame
 
 
-def get_tweets_for_user(username: str, filter_retweets=True) -> [str]:
+def get_tweets_for_user(username: str, filter_retweets=True) -> []:
+    """
+    Gets 100 tweets from the user's profile, optionally filtering for retweets.
+    :param username: The screen name of the desired user. Can also be other user identifiers
+    :param filter_retweets: Whether or not retweets should be filtered. Default is True
+    :return: An array of the tweets appearing on the user's profile
+    """
+
     user = None
     tweets = []
 
@@ -146,8 +177,13 @@ def get_tweets_for_user(username: str, filter_retweets=True) -> [str]:
         return 'PRIVATE'
 
 
-# Assembles a pandas dataframe out of the frequency of specific words.
 def build_frequency_frame(data: []) -> pd.DataFrame:
+    """
+    Assembles a pandas dataframe out of the frequency of specific words.
+    :param data: A list of words
+    :return: A dataframe with columns 'word' and 'freq' containg the word and its frequency
+    """
+
     word_counter = {}
     word_list = []
     freq_list = []
@@ -171,26 +207,32 @@ def build_frequency_frame(data: []) -> pd.DataFrame:
     return ret_frame
 
 
-# Removes 'RT' and '#' from tweets and selects for meaningful words
-def strip_tweets(whole_tweet_list: str) -> [str]:
-    stripped_tweet = []
+# Removes 'RT' and '#' from tweets and selects for meaningful words - Currently unused
+# def strip_tweets(whole_tweet_list: str) -> [str]:
+#     stripped_tweet = []
+#
+#     for whole_tweet in whole_tweet_list:
+#         for phrase in whole_tweet.split(' '):
+#             if phrase == 'RT' or phrase.startswith('@') or phrase.startswith(' ') or phrase.isalnum() is not True:
+#                 phrase = 'pass'
+#             else:
+#                 if phrase.lower() in stopwords.words('english'):
+#                     phrase = 'pass'
+#             if phrase != 'pass':
+#
+#                 stripped_tweet.append(phrase.encode('utf-8'))
+#
+#     return stripped_tweet
 
-    for whole_tweet in whole_tweet_list:
-        for phrase in whole_tweet.split(' '):
-            if phrase == 'RT' or phrase.startswith('@') or phrase.startswith(' ') or phrase.isalnum() is not True:
-                phrase = 'pass'
-            else:
-                if phrase.lower() in stopwords.words('english'):
-                    phrase = 'pass'
-            if phrase != 'pass':
 
-                stripped_tweet.append(phrase.encode('utf-8'))
-
-    return stripped_tweet
-
-
-# Searches for a user, then selects 100 of that user's followers and builds a frequency map
 def search_network(root_user: str, should_save=True) -> pd.DataFrame:
+    """
+    Searches for a user, then selects 100 of that user's followers and builds a frequency map
+    :param root_user: An identifier for the user whose followers should be searched as well
+    :param should_save: Should the tweets be saved to a .csv file. Default is True
+    :return: A frequency frame [See datamanager.build_frequency_frame()] for the network
+    """
+
     network_ids = []
     network_tweets = []
 
@@ -228,8 +270,13 @@ def search_network(root_user: str, should_save=True) -> pd.DataFrame:
     return network_frame
 
 
-# Takes a list of user IDs and turns them into screen names
 def screen_names_from_ids(id_list: []) -> [str]:
+    """
+    Takes a list of user IDs and turns them into screen names
+    :param id_list: A list of user IDs to process
+    :return: A list of user screen names
+    """
+
     name_list = []
 
     for user_id in id_list:
@@ -246,10 +293,15 @@ def screen_names_from_ids(id_list: []) -> [str]:
 
 
 def build_user_frame(identifier: str) -> pd.DataFrame:
+    """
+    Creates a pandas dataframe that contains all of the tweets, retweets, and up to 100 liked tweets for a user.
+    :param identifier: An identifier such as a screen name or ID for the user
+    :return: A dataframe containing the user's tweets, retweets, and liked tweets
+    """
+
     tl_tweets = get_tweets_for_user(identifier, filter_retweets=False)
     favorited_tweets = tw.Cursor(api.favorites, id=identifier).items(100)
 
-    # All of the tweets, likes, and retweets on a user's profile
     tweet_text = []
     tweet_ids = []
     tweet_screen_names = []
@@ -272,6 +324,12 @@ def build_user_frame(identifier: str) -> pd.DataFrame:
 
 
 def select_nouns(tweets: []) -> [str]:
+    """
+    Selects all of the nouns out of a user's tweets
+    :param tweets: An array of tweets to process
+    :return: A list of nouns used in the provided tweets
+    """
+
     nouns = []
     tweet_tokenizer = TweetTokenizer()
 

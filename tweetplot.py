@@ -19,8 +19,12 @@ auth = tw.OAuthHandler(consumer_key, consumer_secret)
 api = tw.API(auth, wait_on_rate_limit=True)
 
 
-# Loads account data from account_plot.csv
 def load_account_data() -> pd.DataFrame:
+    """
+    Loads account data from account_plot.csv
+    :return: A dataframe containing the account access token and secret if it exists. None otherwise
+    """
+
     data = None
 
     try:
@@ -31,8 +35,12 @@ def load_account_data() -> pd.DataFrame:
     return data
 
 
-# Logs in to Twitter, requesting that the user authorizes the app if needed
 def login(account_data: pd.DataFrame):
+    """
+    Logs in to Twitter, requesting that the user authorizes the app if needed
+    :param account_data: Dataframe with the account access token and secret. Can be None
+    """
+
     if account_data is None or account_data.empty:
         try:
             redirect_url = auth.get_authorization_url()
@@ -57,15 +65,26 @@ def login(account_data: pd.DataFrame):
         auth.set_access_token(a_t, a_s)
 
 
-# Creates a path to an image to be posted
 def make_path_for_image(image_topic: str) -> str:
+    """
+    Creates a path to an image to be posted
+    :param image_topic: The name of the image without _plot.png
+    :return: A string of the file path for the plot image
+    """
+
     file_name = os.getcwd() + '/' + image_topic + '/' + image_topic.lower().replace(' ', '_') + '_plot.png'
 
     return file_name
 
 
-# Post a tweet to the currently authenticated account
 def post_tweet(text: str, with_image=True, image_name=''):
+    """
+    Post a tweet to the currently authenticated account
+    :param text: The text of the post to be made
+    :param with_image: Should this post include an image? Defaults to True
+    :param image_name: Path to the image file
+    """
+
     image_path = make_path_for_image(image_name)
     print(image_path)
 
@@ -78,16 +97,25 @@ def post_tweet(text: str, with_image=True, image_name=''):
             print(f'Could not update user status because {error.response}')
 
 
-# Asks the user if the software should be ran again
 def repeat_menu():
+    """
+    Asks the user if the software should be ran again
+    """
+
     if input('Run again?: ').capitalize().startswith('Y'):
         main()
     else:
         print('Exiting...')
 
 
-# Handles incoming user commands
 def process_command(command: str, args=[]):
+    """
+    Handles incoming user commands
+    :param command: A string indicating the command type. Valid types are topic, user, network, tweet
+    :param args: Any additional information required to execute the command. Optional
+    :return: Varies by command
+    """
+
     if command == 'topic':
         topic = input('Select a topic to search: ')
         save_name = topic
@@ -100,7 +128,6 @@ def process_command(command: str, args=[]):
         topic_file = dm.make_file_name_for_search(save_name)
         topic_frame = dm.get_dataframe_from_file(topic_file)
         should_plot = args[0]
-        plotter = PlotMaker(f'Frequency of Words Used When Tweeting About {save_name.capitalize()}')
 
         topics_tweets = dm.load_tweets(topic=topic, from_file=False, frame=topic_frame)
         topic_tweets_stripped = dm.select_nouns(topics_tweets)
@@ -110,9 +137,10 @@ def process_command(command: str, args=[]):
         topic_tweets_frame.to_csv(freq_file_name)
 
         plot_tweets = topic_tweets_frame[topic_tweets_frame.freq >= 3]
+        plotter = PlotMaker(f'Frequency of Words Used When Tweeting About {save_name.title()}', plot_tweets)
 
         if should_plot:
-            plotter.build_bar_plot(plot_tweets, 'word', 'freq', topic)
+            plotter.build_bar_plot('word', 'freq', topic)
 
     elif command == 'user':
         username = input('Input username: ')
@@ -128,7 +156,7 @@ def process_command(command: str, args=[]):
         elif user_mode == '2':
             dm.save_tweets(username, do_search=False, to_save=user_tweets)
             tweet_text = dm.load_tweets(username)
-            stripped_text = dm.strip_tweets(tweet_text)
+            stripped_text = dm.select_nouns(tweet_text)
             user_tweet_frame = dm.build_frequency_frame(stripped_text)
             user_tweet_frame = user_tweet_frame[user_tweet_frame.freq > 3]
         elif user_mode == '3':
@@ -137,22 +165,25 @@ def process_command(command: str, args=[]):
 
         if should_plot:
             if user_mode == '1':
-                plotter = PlotMaker(f'Frequency of Words on {username}s profile')
-                plotter.build_bar_plot(freq_frame, 'word', 'freq', username)
+                title = f'Frequency of Words on {username}s profile'
+                plotter = PlotMaker(title, freq_frame)
+                plotter.build_bar_plot('word', 'freq', username)
             elif user_mode == '2':
-                plotter = PlotMaker(f'Frequency of Words in {username}s tweets')
-                plotter.build_bar_plot(user_tweet_frame, 'word', 'freq', f'{username}s tweets')
+                title = f'Frequency of Words in {username}s tweets'
+                plotter = PlotMaker(title, user_tweet_frame)
+                plotter.build_bar_plot('word', 'freq', f'{username}s tweets')
             elif user_mode == '3':
-                plotter = PlotMaker(f'Retweets as a function of favorites for {username.capitalize()}')
-                plotter.build_scatter_plot(ut_frame, 'favorites', 'retweets', username)
+                title = f'Retweets as a function of favorites for {username}'
+                plotter = PlotMaker(title, ut_frame)
+                plotter.build_scatter_plot('favorites', 'retweets', username)
     elif command == 'network':
         username = input('Input username: ')
         net_frame = dm.search_network(username)
         should_plot = args[0]
-        plotter = PlotMaker(f'Frequency of Words in {username}s network')
+        plotter = PlotMaker(f'Frequency of Words in {username}s network', net_frame)
 
         if should_plot:
-            plotter.build_bar_plot(net_frame, 'word', 'freq', username)
+            plotter.build_bar_plot('word', 'freq', username)
     elif command == 'tweet':
         post_text = input('Entire the text for your post: ')
         graph_name = input('Select a graph to post: ')
