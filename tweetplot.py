@@ -1,3 +1,4 @@
+import logging
 import os
 import unicodedata
 
@@ -18,6 +19,19 @@ auth = tw.OAuthHandler(consumer_key, consumer_secret)
 
 api = tw.API(auth, wait_on_rate_limit=True)
 
+log_path = os.getcwd() + '/logs/ttViz_log.log'
+log_format = '%(levelname)s | %(asctime)s | %(message)s'
+
+if os.path.exists(os.getcwd() + '/logs/') is not True:
+    try:
+        os.mkdir("logs")
+    except IOError as error:
+        print(f'Could not create log directory {os.getcwd()}/logs/ ! Logging info will be unavailable!')
+
+logging.basicConfig(filename=log_path, level=logging.DEBUG, filemode='w')
+
+logger = logging.getLogger()
+
 
 def load_account_data() -> pd.DataFrame:
     """
@@ -31,6 +45,7 @@ def load_account_data() -> pd.DataFrame:
         data = pd.read_csv('account_plot.csv')
     except IOError:
         print('Accounts file does not exist! Will create new one.')
+        logger.info('Could not find account data file! Creating new one...')
 
     return data
 
@@ -58,6 +73,7 @@ def login(account_data: pd.DataFrame):
             pd.DataFrame(account_data).to_csv('account_plot.csv')
         except tw.TweepError or IOError:
             print('An error occurred during authorization!')
+            logger.critical('Could not access user account!')
     else:
         a_t = str(account_data.iat[0, 1]).replace('b', '', 1).replace("'", '')
         a_s = str(account_data.iat[0, 2]).replace('b', '', 1).replace("'", '')
@@ -120,17 +136,30 @@ def process_command(command: str, args=[]):
         topic = input('Select a topic to search: ')
         save_name = topic
         assigned_name = args[1]
+        tweet_limit = input('Input the maximum number of tweets to get (Leave blank for 100): ')
+
+        if tweet_limit != '':
+            try:
+                tweet_limit = int(tweet_limit)
+
+                if tweet_limit < 1:
+                    print(f'Input {tweet_limit} is too low! Defaulting to 100')
+                    tweet_limit = 100
+            except ValueError:
+                print(f'Invalid input {tweet_limit}! Defaulting to 100')
+                tweet_limit = 100
+        else:
+            tweet_limit = 100
 
         if assigned_name != '':
             save_name = assigned_name
 
-        dm.save_tweets(save_name)
-        topic_file = dm.make_file_name_for_search(save_name)
-        topic_frame = dm.get_dataframe_from_file(topic_file)
+        topics_tweets_whole = dm.search_tweets_for_query(query=topic, limit=tweet_limit)
+        dm.save_tweets(save_name, to_save=topics_tweets_whole)
+        topic_tweets_text = dm.load_tweet_text(topic)
         should_plot = args[0]
 
-        topics_tweets = dm.load_tweets(topic=topic, from_file=False, frame=topic_frame)
-        topic_tweets_stripped = dm.select_nouns(topics_tweets)
+        topic_tweets_stripped = dm.select_nouns(topic_tweets_text)
         freq_file_name = dm.make_file_name_for_search(save_name, type='freq')
         topic_tweets_frame = dm.build_frequency_frame(topic_tweets_stripped)
 
@@ -150,17 +179,17 @@ def process_command(command: str, args=[]):
 
         if user_mode == '1':
             user_frame = dm.build_user_frame(username)
-            whole_tweets = dm.load_tweets(username, from_file=False, frame=user_frame)
+            whole_tweets = dm.load_tweet_text(username, from_file=False, frame=user_frame)
             stripped_tweets = dm.select_nouns(whole_tweets)
             freq_frame = dm.build_frequency_frame(stripped_tweets)
         elif user_mode == '2':
-            dm.save_tweets(username, do_search=False, to_save=user_tweets)
-            tweet_text = dm.load_tweets(username)
+            dm.save_tweets(username, to_save=user_tweets)
+            tweet_text = dm.load_tweet_text(username)
             stripped_text = dm.select_nouns(tweet_text)
             user_tweet_frame = dm.build_frequency_frame(stripped_text)
             user_tweet_frame = user_tweet_frame[user_tweet_frame.freq > 3]
         elif user_mode == '3':
-            dm.save_tweets(topic=username, do_search=False, to_save=user_tweets)
+            dm.save_tweets(username, to_save=user_tweets)
             ut_frame = pd.read_csv(dm.make_file_name_for_search(username))
 
         if should_plot:

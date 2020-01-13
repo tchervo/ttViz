@@ -55,7 +55,8 @@ class PlotMaker:
             r_val = round(lin_model.rvalue, 4)
             r_sq = round(r_val ** 2, 4)
             p_val = round(lin_model.pvalue, 4)
-            fig_cap = f'r: {r_val} r^2: {r_sq} p-value: {p_val}'
+            std_err = round(lin_model.stderr, 4)
+            fig_cap = f'r: {r_val} r^2: {r_sq} p-value: {p_val} std error: {std_err}'
 
             plt.plot(explan_var, slope * explan_var + intercept, color='red')
             plt.figtext(0.05, 0.0005, fig_cap, wrap=True, horizontalalignment='left', fontsize=10)

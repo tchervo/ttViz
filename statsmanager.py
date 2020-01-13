@@ -27,8 +27,8 @@ def is_normal_dist(data):
 
 def do_t_test(data1: pd.DataFrame, data2: pd.DataFrame, mode='interactions') -> tuple:
     """
-    Uses Welch's t-test on the indicated variables. Scipy by default does a one-sample test, so changes to the p-value
-    are required
+    Uses Welch's t-test on the indicated variables. Scipy by default does a two-sided test, so changes to the p-value
+    are required if a one-sided test is requested.
     :param data1: A pandas dataframe
     :param data2: A pandas dataframe
     :param mode: What sort of data should the t-test analyze. Default is interactions

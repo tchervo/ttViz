@@ -8,6 +8,7 @@ import tweetplot
 
 tw = tweetplot.tw
 api = tweetplot.api
+logger = tweetplot.logger
 
 
 def make_file_name_for_search(search: str, type='tweets') -> str:
@@ -25,6 +26,7 @@ def make_file_name_for_search(search: str, type='tweets') -> str:
             os.mkdir(search_dir)
         except IOError:
             print('Could not create directory: ' + search_dir)
+            logger.critical(f'Could not create directory {search_dir}! Information from this run will not be saved!')
 
     save_file = ''
 
@@ -54,10 +56,25 @@ def make_file_name_for_search(search: str, type='tweets') -> str:
     return save_file
 
 
-def save_tweets(topic: str, do_search=True, to_save=[]):
+def search_tweets_for_query(query: str, limit=100):
+    """
+    Searches Twitter using the provided query. This function supports any legitimate query on twitter
+    :param query: The search to perform. Accepts advanced Twitter searches
+    :param limit: How many tweets should be searched
+    :return: An array of tweets generated from the query
+    """
+    tweets = tw.Cursor(api.search, q=query + ' -filter:retweets', lang='en', result_type='mixed',
+                       tweet_mode='extended').items(limit)
+
+    ret_list = [tweet for tweet in tweets]
+
+    return ret_list
+
+
+def save_tweets(save_name: str, to_save=[]):
     """
     Saves tweets to a CSV file named after their topic
-    :param topic: The topic to search if needed. Also becomes the save name for the file
+    :param save_name: The name of the file to be saved
     :param do_search: Whether or not this function should search twitter first. Default is True
     :param to_save: An array of tweets to save if do_search is False.
     :return:
@@ -69,41 +86,24 @@ def save_tweets(topic: str, do_search=True, to_save=[]):
     tweet_retweets = []
     tweet_screen_names = []
     tweet_times = []
-    save_file = make_file_name_for_search(topic)
+    save_file = make_file_name_for_search(save_name)
 
-    if do_search:
-        tweets = tw.Cursor(api.search, q=topic + ' -filter:retweets', lang='en', result_type='mixed').items(200)
+    for tweet in to_save:
+        tweet_text.append(tweet.full_text)
+        tweet_ids.append(tweet.id)
+        tweet_favorites.append(int(tweet.favorite_count))
+        tweet_retweets.append(int(tweet.retweet_count))
+        tweet_screen_names.append(tweet.user.screen_name)
+        tweet_times.append(str(tweet.created_at))
 
-        for tweet in tweets:
-            if tweet.user.protected is not True:
-                tweet_text.append(tweet.text)
-                tweet_ids.append(tweet.id)
-                tweet_favorites.append(int(tweet.favorite_count))
-                tweet_retweets.append(int(tweet.retweet_count))
-                tweet_screen_names.append(tweet.user.screen_name)
-                tweet_times.append(str(tweet.created_at))
-
-        tweet_frame = pd.DataFrame(data={'tweet_ID': tweet_ids, 'text': tweet_text, 'favorites': tweet_favorites,
-                                         'retweets': tweet_retweets, 'screen_name': tweet_screen_names,
-                                         'tweet_times': tweet_times})
-        tweet_frame.to_csv(save_file)
-    else:
-        for tweet in to_save:
-            tweet_text.append(tweet.text)
-            tweet_ids.append(tweet.id)
-            tweet_favorites.append(int(tweet.favorite_count))
-            tweet_retweets.append(int(tweet.retweet_count))
-            tweet_screen_names.append(tweet.user.screen_name)
-            tweet_times.append(str(tweet.created_at))
-
-        tweet_frame = pd.DataFrame(data={'tweet_ID': tweet_ids, 'text': tweet_text, 'favorites': tweet_favorites,
-                                         'retweets': tweet_retweets, 'screen_name': tweet_screen_names,
-                                         'tweet_times': tweet_times})
-        print(tweet_frame)
-        tweet_frame.to_csv(save_file)
+    tweet_frame = pd.DataFrame(data={'tweet_ID': tweet_ids, 'text': tweet_text, 'favorites': tweet_favorites,
+                                     'retweets': tweet_retweets, 'screen_name': tweet_screen_names,
+                                     'tweet_times': tweet_times})
+    print(tweet_frame)
+    tweet_frame.to_csv(save_file)
 
 
-def load_tweets(topic: str, from_file=True, frame=pd.DataFrame) -> [str]:
+def load_tweet_text(topic: str, from_file=True, frame=pd.DataFrame) -> [str]:
     """
     Loads tweets from CSV and returns an array of the tweets' text
     :param topic: Name of the file without .csv
@@ -157,7 +157,7 @@ def get_tweets_for_user(username: str, filter_retweets=True) -> []:
     tweets = []
 
     try:
-        user = api.get_user(username, tweet_mode='extended')
+        user = api.get_user(username)
     except tw.TweepError as error:
         print(f'Could not find user with username: {username} because {error.reason}')
         print(error.api_code)
@@ -165,15 +165,17 @@ def get_tweets_for_user(username: str, filter_retweets=True) -> []:
 
     if user.protected is not True:
         if filter_retweets:
-            for tweet in api.user_timeline(user.id, count=100):
-                if str(tweet.text).startswith('RT') is False:
+            for tweet in api.user_timeline(user.id, count=100, tweet_mode='extended'):
+                if str(tweet.full_text).startswith('RT') is False:
                     tweets.append(tweet)
+                    print(tweet.full_text)
 
             return tweets
         else:
             return api.user_timeline(user.id, count=100)
     else:
         print(f'{username} has a private account!')
+        logger.info(f'{username} has a private account! Data will not be gathered from this account!')
         return 'PRIVATE'
 
 
@@ -237,19 +239,20 @@ def search_network(root_user: str, should_save=True) -> pd.DataFrame:
     network_tweets = []
 
     try:
-        user = api.get_user(root_user, tweet_mode='extended')
+        user = api.get_user(root_user)
     except tw.TweepError as error:
         print(f'Could not find user with username: {root_user} because {error.reason}')
         print(error.api_code)
-        tweetplot.repeat_menu()
+        logger.warning(f'Could not find account with username: {root_user}! Received API code {error.api_code}')
 
     network_ids.append(user.id)
 
-    for follower_id in tw.Cursor(api.followers_ids, id=root_user).items(100):
+    for follower_id in tw.Cursor(api.followers_ids, id=root_user, tweet_mode='extended').items(100):
         try:
             follower = api.get_user(follower_id)
         except tw.TweepError as error:
             print(f'An error occurred trying to find follower with ID: {follower_id} because {error.reason}')
+            logger.warning(f'Could not find account with username: {follower_id}! Received API code {error.api_code}')
 
         if follower.protected is not True:
             network_ids.append(follower_id)
@@ -258,8 +261,12 @@ def search_network(root_user: str, should_save=True) -> pd.DataFrame:
         net_user_tl = api.user_timeline(id_)
 
         for tweet in net_user_tl:
-            if str(tweet.text).startswith('RT') is False:
-                network_tweets.append(tweet.text)
+            if hasattr(tweet, 'full_text'):
+                if str(tweet.full_text).startswith('RT') is False:
+                    network_tweets.append(tweet.full_text)
+            else:
+                if str(tweet.text).startswith('RT') is False:
+                    network_tweets.append(tweet.text)
 
     network_words = select_nouns(network_tweets)
     network_frame = build_frequency_frame(network_words)
@@ -287,31 +294,38 @@ def screen_names_from_ids(id_list: []) -> [str]:
                 name_list.append(user.screen_name)
         except tw.TweepError as error:
             print(f'Could not find user with ID: {user_id} because {error.reason}')
-            print(error.api_code)
+            logger.warning(f'Could not find user with ID: {user_id} because {error.reason}')
 
     return name_list
 
 
-def build_user_frame(identifier: str) -> pd.DataFrame:
+def build_user_frame(identifier: str, limit=100) -> pd.DataFrame:
     """
     Creates a pandas dataframe that contains all of the tweets, retweets, and up to 100 liked tweets for a user.
     :param identifier: An identifier such as a screen name or ID for the user
+    :param limit: How many tweets should be pulled? Default is 100
     :return: A dataframe containing the user's tweets, retweets, and liked tweets
     """
 
     tl_tweets = get_tweets_for_user(identifier, filter_retweets=False)
-    favorited_tweets = tw.Cursor(api.favorites, id=identifier).items(100)
+    favorited_tweets = tw.Cursor(api.favorites, id=identifier).items(limit)
 
     tweet_text = []
     tweet_ids = []
     tweet_screen_names = []
 
     for tweet in tl_tweets:
-        tweet_text.append(tweet.text)
+        if hasattr(tweet, 'full_text'):
+            tweet_text.append(tweet.full_text)
+        else:
+            tweet_text.append(tweet.text)
         tweet_ids.append(tweet.id)
         tweet_screen_names.append(tweet.user.screen_name)
     for tweet in favorited_tweets:
-        tweet_text.append(tweet.text)
+        if hasattr(tweet, 'full_text'):
+            tweet_text.append(tweet.full_text)
+        else:
+            tweet_text.append(tweet.text)
         tweet_ids.append(tweet.id)
         tweet_screen_names.append(tweet.user.screen_name)
 
@@ -343,4 +357,3 @@ def select_nouns(tweets: []) -> [str]:
                     nouns.append(word)
 
     return nouns
-
