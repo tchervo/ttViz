@@ -168,7 +168,6 @@ def get_tweets_for_user(username: str, filter_retweets=True) -> []:
             for tweet in api.user_timeline(user.id, count=100, tweet_mode='extended'):
                 if str(tweet.full_text).startswith('RT') is False:
                     tweets.append(tweet)
-                    print(tweet.full_text)
 
             return tweets
         else:

@@ -7,7 +7,7 @@ from scipy.stats import linregress
 
 class PlotMaker:
     """
-    Generates visualizations of specified data. Requires a specified title
+    Generates visualizations of specified data. Requires a specified title and data.
     """
 
     def __init__(self, plot_title: str, plot_data: pd.DataFrame, plot_caption=''):
@@ -112,3 +112,19 @@ class PlotMaker:
                     print(f'Could not find {error.filename}! Check directory name?')
 
             plt.show()
+
+    def build_boxplot(self, save_name: str, do_save=True):
+        """
+        Generates a boxplot based on the provided data. X-axis values are default provided by the data
+        :param save_name: The basic name of the plot to be saved
+        :param do_save: Whether or not the plot is saved
+        """
+
+        plt.boxplot(self.data)
+
+        if do_save:
+            file_name = self.make_file_name_for_plot(save_name)
+            try:
+                plt.savefig(file_name, dpi=150)
+            except FileNotFoundError as error:
+                print(f'Could not find {error.filename}! Check directory name?')

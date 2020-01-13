@@ -28,7 +28,7 @@ if os.path.exists(os.getcwd() + '/logs/') is not True:
     except IOError as error:
         print(f'Could not create log directory {os.getcwd()}/logs/ ! Logging info will be unavailable!')
 
-logging.basicConfig(filename=log_path, level=logging.DEBUG, filemode='w')
+logging.basicConfig(filename=log_path, level=logging.DEBUG, filemode='w', format=log_format)
 
 logger = logging.getLogger()
 
@@ -251,8 +251,8 @@ def main():
         user1_tweets = dm.get_tweets_for_user(user1)
         user2_tweets = dm.get_tweets_for_user(user2)
 
-        dm.save_tweets(topic=user1, do_search=False, to_save=user1_tweets)
-        dm.save_tweets(topic=user2, do_search=False, to_save=user2_tweets)
+        dm.save_tweets(user1, to_save=user1_tweets)
+        dm.save_tweets(user2, to_save=user2_tweets)
 
         user1_data = pd.read_csv(dm.make_file_name_for_search(user1))
         user2_data = pd.read_csv(dm.make_file_name_for_search(user2))
