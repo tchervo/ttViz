@@ -102,7 +102,6 @@ def post_tweet(text: str, with_image=True, image_name=''):
     """
 
     image_path = make_path_for_image(image_name)
-    print(image_path)
 
     if with_image:
         api.update_with_media(image_path, status=text)
@@ -111,6 +110,7 @@ def post_tweet(text: str, with_image=True, image_name=''):
             api.update_status(status=text)
         except tw.TweepError as error:
             print(f'Could not update user status because {error.response}')
+            logger.error(f'Could not update status because {error.response}')
 
 
 def repeat_menu():
@@ -259,19 +259,22 @@ def main():
 
         fav_stat, fav_pval, rt_stat, rt_pval = sm.do_t_test(user1_data, user2_data)
 
-        if fav_stat > 0 and fav_pval < 0.05:
-            print(f'{user1} statistically gets more favorites on their tweets than {user2}')
-            print(fav_stat, '\n', fav_pval)
-        else:
-            print(f'{user1} statistically does not get more favorites on their tweets than {user2}')
-            print(fav_stat, '\n', fav_pval)
+        if should_plot:
+            comb_data = [user1_data['favorites'], user1_data['retweets'], user2_data['favorites'],
+                         user2_data['retweets']]
 
-        if rt_stat > 0 and rt_pval < 0.05:
-            print(f'{user1} statistically gets more retweets on their tweets than {user2}')
-            print(rt_stat, '\n', rt_pval)
-        else:
-            print(f'{user1} statistically does not get more retweets on their tweets than {user2}')
-            print(rt_stat, '\n', rt_pval)
+            box_plotter = PlotMaker(f'Distribution of Favorites and Retweets for @{user1} and @{user2}', comb_data)
+
+            box_plotter.build_boxplot(f'{user1}_{user2}_comp', xlabels=[f'{user1} Favorites', f'{user1} Retweets',
+                                                                        f'{user2} Favorites', f'{user2} Retweets'])
+
+            fav_stat = round(fav_stat, 4)
+            fav_pval = round(fav_pval, 4)
+            rt_stat = round(rt_stat, 4)
+            rt_pval = round(rt_pval, 4)
+
+        test_tweet = sm.format_tweet_from_stats((fav_stat, fav_pval, rt_stat, rt_pval), opt_data=[user1, user2])
+        print(test_tweet)
     else:
         print('Invalid input!')
         main()

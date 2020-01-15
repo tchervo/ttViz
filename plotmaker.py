@@ -15,13 +15,23 @@ class PlotMaker:
         self.caption = plot_caption
         self.data = plot_data
 
-    def make_file_name_for_plot(self, subject: str) -> str:
+        plt.style.use('ggplot')
+
+    @staticmethod
+    def make_file_name_for_plot(subject: str) -> str:
         """
         Generates a simple, plug and go file name for the plot
         :param subject: What the plot is about. Has _plot.png appended to the end when making the file name
         :return: A file path for the plot image as a string
         """
         file_name = os.getcwd() + '/' + subject + '/' + subject.lower().replace(' ', '_') + '_plot.png'
+        path = os.getcwd() + '/' + subject + '/'
+
+        if os.path.exists(path) is not True:
+            try:
+                os.mkdir(path)
+            except IOError:
+                print(f'Could not make path {path} !')
 
         return file_name
 
@@ -113,14 +123,27 @@ class PlotMaker:
 
             plt.show()
 
-    def build_boxplot(self, save_name: str, do_save=True):
+    def build_boxplot(self, save_name: str, do_save=True, xlabels=[], stats=[]):
         """
-        Generates a boxplot based on the provided data. X-axis values are default provided by the data
+        Generates a boxplot based on the provided data with optional defined x-axis labels.
+        :param stats: Optional statistics to show as a caption
+        :param xlabels: Optional labels for the x-axis
         :param save_name: The basic name of the plot to be saved
         :param do_save: Whether or not the plot is saved
         """
 
-        plt.boxplot(self.data)
+        green_diamond = dict(markerfacecolor='green', marker='D')
+
+        plt.boxplot(self.data, flierprops=green_diamond)
+        plt.title(self.title)
+        plt.xlabel("Category")
+        plt.ylabel("Count")
+
+        if xlabels is not []:
+            locations, labels = plt.xticks()
+            plt.xticks(locations, xlabels)
+            # Ensures that all the words on the boxplot's x-axis render properly
+            plt.gcf().set_size_inches(11, 5)
 
         if do_save:
             file_name = self.make_file_name_for_plot(save_name)
@@ -128,3 +151,5 @@ class PlotMaker:
                 plt.savefig(file_name, dpi=150)
             except FileNotFoundError as error:
                 print(f'Could not find {error.filename}! Check directory name?')
+
+        plt.show()

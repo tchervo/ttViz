@@ -198,9 +198,8 @@ def build_frequency_frame(data: []) -> pd.DataFrame:
             # Accounts for capitalization variations
             word_counter[word.lower()] = 1
 
-    for word in word_counter.keys():
+    for word, freq in zip(word_counter.keys(), word_counter.values()):
         word_list.append(word)
-    for freq in word_counter.values():
         freq_list.append(freq)
 
     ret_frame = pd.DataFrame({'word': word_list, 'freq': freq_list}).sort_values(by=['freq'], ascending=False)

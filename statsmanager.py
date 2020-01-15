@@ -45,3 +45,52 @@ def do_t_test(data1: pd.DataFrame, data2: pd.DataFrame, mode='interactions') -> 
                                             nan_policy='omit')
 
         return fav_stat, fav_p_val, rt_stat, rt_p_val
+
+
+def format_tweet_from_stats(data: tuple, test_type='t', opt_data=[]) -> str:
+    """
+    Creates a tweet with statistical information in it.
+    :param opt_data: Optional data to be formatted into the tweet.
+    :param data: The statistics to be formatted into the tweet.
+    :param test_type: The type of statistical test being performed. Defaults to a t-test
+    :return: A string that can be posted as a tweet
+    """
+
+    if test_type == 't':
+        fav_stat, fav_p_val, rt_stat, rt_p_val = data
+        user1 = opt_data[0]
+        user2 = opt_data[1]
+        sig_fav = fav_p_val < 0.05
+        sig_rt = rt_p_val < 0.05
+
+        if sig_fav and not sig_rt:
+            if fav_stat > 0:
+                return f'@{user1} has statistically more favorites on their tweets than @{user2}! ' \
+                       f'(p-value: {fav_p_val} t-statistic: {fav_stat}'
+            else:
+                return f'@{user2} has statistically more favorites on their tweets than @{user1}! ' \
+                       f'(p-value: {fav_p_val} t-statistic: {fav_stat * -1}'
+        if sig_rt and not sig_fav:
+            if rt_stat > 0:
+                return f'@{user1} has statistically more retweets on their tweets than @{user2}! p-value: {rt_p_val}' \
+                       f' t-statistic: {rt_stat}'
+            else:
+                return f'@{user2} has statistically more retweets on their tweets than @{user1}! p-value: {rt_p_val}' \
+                       f' t-statistic: {rt_stat * -1}'
+        if sig_rt and sig_fav:
+            if rt_stat > 0 and fav_stat > 0:
+                return f'@{user1} has statistically more favorites and retweets on their tweets than @{user2}! ' \
+                       f'(p-value: {fav_p_val} (Favorites), {rt_p_val} (Retweets) t-statistic: {fav_stat} (Favorites)' \
+                       f', {rt_stat} (Retweets)'
+            else:
+                return f'@{user2} has statistically more favorites and retweets on their tweets than @{user1}! ' \
+                       f'(p-value: {fav_p_val} (Favorites), {rt_p_val} (Retweets) t-statistic: {fav_stat * -1}' \
+                       f'(Favorites), {rt_stat * -1} (Retweets)'
+        if not sig_rt and not sig_fav:
+            return f' Neither @{user1} or @{user2} have statistically more retweets or favorite than the other!' \
+                   f'(p-value: {fav_p_val} (Favorites), {rt_p_val} (Retweets) t-statistic: {fav_stat} (Favorites)' \
+                   f', {rt_stat} (Retweets)'
+
+
+
+
