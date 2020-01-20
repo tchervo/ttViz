@@ -245,15 +245,21 @@ def search_network(root_user: str, should_save=True) -> pd.DataFrame:
 
     network_ids.append(user.id)
 
-    for follower_id in tw.Cursor(api.followers_ids, id=root_user, tweet_mode='extended').items(100):
+    followers = tw.Cursor(api.followers_ids, id=root_user, tweet_mode='extended').items(100)
+    friends = tw.Cursor(api.friends_ids, id=root_user, tweet_mode='extended').items(100)
+
+    for follower_id, friend_id in zip(followers, friends):
         try:
             follower = api.get_user(follower_id)
-        except tw.TweepError as error:
-            print(f'An error occurred trying to find follower with ID: {follower_id} because {error.reason}')
-            logger.warning(f'Could not find account with username: {follower_id}! Received API code {error.api_code}')
+            friend = api.get_user(friend_id)
 
-        if follower.protected is not True:
-            network_ids.append(follower_id)
+            if follower.protected is not True:
+                network_ids.append(follower_id)
+            if friend.protected is not True:
+                network_ids.append(friend_id)
+        except tw.TweepError as error:
+            print(f'An error occurred trying to find a user because {error.reason}')
+            logger.warning(f'Could not find account with username. Error code: {error.api_code}')
 
     for id_ in network_ids:
         net_user_tl = api.user_timeline(id_)
@@ -363,6 +369,5 @@ def select_pos_words(tweets: [], pos='both') -> [str]:
                     if code.startswith('JJ') or code.startswith('NN') and word.isalnum() and len(word) > 1 and \
                             word != 'https':
                         ret_list.append(word)
-
 
     return ret_list
