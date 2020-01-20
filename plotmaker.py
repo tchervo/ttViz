@@ -1,4 +1,5 @@
 import os
+import random
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -15,7 +16,11 @@ class PlotMaker:
         self.caption = plot_caption
         self.data = plot_data
 
-        plt.style.use('ggplot')
+        styles = ['ggplot', 'fivethirtyeight', 'classic', 'bmh', 'seaborn-dark']
+        style = random.choice(styles)
+
+        assert isinstance(style, str)
+        plt.style.use(style)
 
     @staticmethod
     def make_file_name_for_plot(subject: str) -> str:

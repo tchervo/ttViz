@@ -266,7 +266,7 @@ def search_network(root_user: str, should_save=True) -> pd.DataFrame:
                 if str(tweet.text).startswith('RT') is False:
                     network_tweets.append(tweet.text)
 
-    network_words = select_nouns(network_tweets)
+    network_words = select_pos_words(network_tweets)
     network_frame = build_frequency_frame(network_words)
 
     if should_save:
@@ -335,14 +335,16 @@ def build_user_frame(identifier: str, limit=100) -> pd.DataFrame:
     return ret_frame
 
 
-def select_nouns(tweets: []) -> [str]:
+def select_pos_words(tweets: [], pos='both') -> [str]:
     """
     Selects all of the nouns out of a user's tweets
+    :param pos: The part of string to select. Valid inputs are noun, adj, or both. Default is both
     :param tweets: An array of tweets to process
     :return: A list of nouns used in the provided tweets
     """
 
-    nouns = []
+    # Can be nouns or adjectives
+    ret_list = []
     tweet_tokenizer = TweetTokenizer()
 
     for text in tweets:
@@ -351,7 +353,16 @@ def select_nouns(tweets: []) -> [str]:
         for sentence in token_sentences:
             words = nltk.word_tokenize(str(sentence))
             for word, code in nltk.pos_tag(words):
-                if code.startswith('NN') and word.isalnum() and len(word) > 1 and word != 'https':
-                    nouns.append(word)
+                if pos == 'noun':
+                    if code.startswith('NN') and word.isalnum() and len(word) > 1 and word != 'https':
+                        ret_list.append(word)
+                if pos == 'adj':
+                    if code.startswith('JJ') and word.isalnum() and len(word) > 1 and word != 'https':
+                        ret_list.append(word)
+                if pos == 'both':
+                    if code.startswith('JJ') or code.startswith('NN') and word.isalnum() and len(word) > 1 and \
+                            word != 'https':
+                        ret_list.append(word)
 
-    return nouns
+
+    return ret_list

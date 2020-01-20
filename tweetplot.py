@@ -159,7 +159,7 @@ def process_command(command: str, args=[]):
         topic_tweets_text = dm.load_tweet_text(topic)
         should_plot = args[0]
 
-        topic_tweets_stripped = dm.select_nouns(topic_tweets_text)
+        topic_tweets_stripped = dm.select_pos_words(topic_tweets_text)
         freq_file_name = dm.make_file_name_for_search(save_name, type='freq')
         topic_tweets_frame = dm.build_frequency_frame(topic_tweets_stripped)
 
@@ -180,12 +180,12 @@ def process_command(command: str, args=[]):
         if user_mode == '1':
             user_frame = dm.build_user_frame(username)
             whole_tweets = dm.load_tweet_text(username, from_file=False, frame=user_frame)
-            stripped_tweets = dm.select_nouns(whole_tweets)
+            stripped_tweets = dm.select_pos_words(whole_tweets)
             freq_frame = dm.build_frequency_frame(stripped_tweets)
         elif user_mode == '2':
             dm.save_tweets(username, to_save=user_tweets)
             tweet_text = dm.load_tweet_text(username)
-            stripped_text = dm.select_nouns(tweet_text)
+            stripped_text = dm.select_pos_words(tweet_text)
             user_tweet_frame = dm.build_frequency_frame(stripped_text)
             user_tweet_frame = user_tweet_frame[user_tweet_frame.freq > 3]
         elif user_mode == '3':
