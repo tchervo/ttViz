@@ -16,7 +16,7 @@ A user can be identified through their profile ID or other unique identifier's s
 This visualizaions can be displayed in a bar graph for categorical data and a scatter plot with optional linear model for quantitative data.
 
 ### Network Search
-A "root user" is selected, then 10 of their followers/people following them are selected and have their tweets undergo the same analysis as option 2 of a User Search (No retweets). Results are visualized as a bar graph of frequently used nouns/adjectives.
+A "root user" is selected, then 100 of their followers/people following them are selected and have their tweets undergo the same analysis as option 2 of a User Search (No retweets). Results are visualized as a bar graph of frequently used nouns/adjectives.
 
 ### Proportion Testing
 The number of retweets and likes two user's tweets (excluding retweets) are compared using Welch's T-test. The distribution of likes/retweets for each user's tweets is then visualized on a bar graph.
@@ -36,5 +36,5 @@ This software is provided under the GNU GPL v3 license and is distributed withou
 - Natural Language Toolkit
 - Tweepy
 
-This softaware uses code from the Natural Language Toolkit (NLTK).
+This software uses code from the Natural Language Toolkit (NLTK).
 Bird, Steven, Edward Loper and Ewan Klein (2009), *Natural Language Processing with Python.* O’Reilly Media Inc
