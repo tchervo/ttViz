@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import scipy.stats as stats
 
@@ -9,26 +10,30 @@ def is_normal_dist(data):
     :return: True if the p value for the test is less than 0.05, False otherwise
     """
 
-    if len(data) < 20:
-        print('Kurtosis test is not valid for n < 20, so normal test cannot be run!')
+    # if len(data) < 20:
+    #     print('Kurtosis test is not valid for n < 20, so normal test cannot be run!')
+    #
+    #     return None
+    # else:
+    #
 
-        return None
+    statistic, p_val = stats.normaltest(data, nan_policy='omit')
+
+    print(f'Statistic for normal test (k^2 + s^2): {statistic}')
+
+    if p_val < 0.05:
+        print(p_val)
+        return True
     else:
-        statistic, p_val = stats.normaltest(data, nan_policy='omit')
-
-        print(f'Statistic for normal test (k^2 + s^2): {statistic}')
-
-        if p_val < 0.05:
-            print(p_val)
-            return True
-        else:
-            return False
+        return False
 
 
-def do_t_test(data1: pd.DataFrame, data2: pd.DataFrame, mode='interactions') -> tuple:
+def do_t_test(data1: pd.DataFrame, data2: pd.DataFrame, mode='interactions', tail='two') -> tuple:
     """
     Uses Welch's t-test on the indicated variables. Scipy by default does a two-sided test, so changes to the p-value
     are required if a one-sided test is requested.
+    :param tail: Should the statistics be upper tail, lower tail, or two-sided? Default is two sided. Valid inputs are
+    upper, lower, and two
     :param data1: A pandas dataframe
     :param data2: A pandas dataframe
     :param mode: What sort of data should the t-test analyze. Default is interactions
@@ -92,5 +97,54 @@ def format_tweet_from_stats(data: tuple, test_type='t', opt_data=[]) -> str:
                    f', {rt_stat} (Retweets)'
 
 
+def calculate_resids(slope: float, intercept: float, actuals: [], interval=[], x_vals=[]) -> pd.DataFrame:
+    """
+    Calculates the residuals of a linear fit given the slope and intercpet of the fitted line
+    :param x_vals: Optional x values to plot the fitted values instead of a continuous interval. Defaults to a
+    continuous interval if blank.
+    :param actuals: The actual y values to be compared
+    :param interval: The interval to calculate the residuals over. Must have a stop point and an end point
+    :param slope: The slope of the fitted line
+    :param intercept: The intercept of the fitted line
+    :return: A pandas dataframe containing the columns 'fitted', 'actual', 'resid'
+    """
+    if len(interval) == 2:
+        start_int = interval[0]
+        end_int = interval[1]
 
+        if start_int > end_int:
+            raise ValueError('The start value of the interval must be lower than the end value of the interval!')
+        if type(start_int) != int or type(end_int) != int:
+            raise TypeError('Interval start and end points must be integers!')
+        else:
+            # Numpy by default creates a half-open interval, so for integer values adding one to the end gets the entire
+            # interval
+            end_int += 1
+    elif interval is [] and x_vals is not []:
+        pass
+    else:
+        pass
+    # raise ValueError('Invalid number of inputs in interval! Must have one starting and one ending value!')
+    if interval is [] and x_vals is []:
+        raise SyntaxError('Either an interval or x values are required!')
 
+    fitted_vals = []
+
+    if x_vals is not []:
+        for x in x_vals:
+            value = (slope * x) + intercept
+
+            fitted_vals.append(value)
+    else:
+        for x in np.arange(start=start_int, stop=end_int):
+            value = (slope * x) + intercept
+
+            fitted_vals.append(value)
+
+    resids = np.subtract(actuals, fitted_vals)
+
+    data = {'fitted': fitted_vals, 'actual': actuals, 'resid': resids}
+
+    # print(len(fitted_vals), len(actuals), len(resids))
+
+    return pd.DataFrame(data)

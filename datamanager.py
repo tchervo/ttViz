@@ -366,7 +366,7 @@ def select_pos_words(tweets: [], pos='both') -> [str]:
                     if code.startswith('JJ') and word.isalnum() and len(word) > 1 and word != 'https':
                         ret_list.append(word)
                 if pos == 'both':
-                    if code.startswith('JJ') or code.startswith('NN') and word.isalnum() and len(word) > 1 and \
+                    if (code.startswith('JJ') or code.startswith('NN')) and word.isalnum() and len(word) > 1 and \
                             word != 'https':
                         ret_list.append(word)
 

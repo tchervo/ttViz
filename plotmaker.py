@@ -2,8 +2,11 @@ import os
 import random
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from scipy.stats import linregress
+
+import statsmanager as sm
 
 
 class PlotMaker:
@@ -20,7 +23,7 @@ class PlotMaker:
         style = random.choice(styles)
 
         assert isinstance(style, str)
-        plt.style.use(style)
+        plt.style.use('ggplot')
 
     @staticmethod
     def make_file_name_for_plot(subject: str) -> str:
@@ -62,21 +65,43 @@ class PlotMaker:
         plt.xlabel(explanatory.capitalize())
         plt.ylabel(response.capitalize())
 
-        if do_reg:
-            lin_model = linregress(explan_var, response_var)
-            slope = lin_model.slope
-            intercept = lin_model.intercept
-
-            r_val = round(lin_model.rvalue, 4)
-            r_sq = round(r_val ** 2, 4)
-            p_val = round(lin_model.pvalue, 4)
-            std_err = round(lin_model.stderr, 4)
-            fig_cap = f'r: {r_val} r^2: {r_sq} p-value: {p_val} std error: {std_err}'
-
-            plt.plot(explan_var, slope * explan_var + intercept, color='red')
-            plt.figtext(0.05, 0.0005, fig_cap, wrap=True, horizontalalignment='left', fontsize=10)
-
         if explan_var.empty is not True and response_var.empty is not True:
+            if do_reg:
+                lin_model = linregress(explan_var, response_var)
+                slope = lin_model.slope
+                intercept = lin_model.intercept
+
+                r_val = round(lin_model.rvalue, 4)
+                r_sq = round(r_val ** 2, 4)
+                p_val = round(lin_model.pvalue, 4)
+                std_err = round(lin_model.stderr, 4)
+
+                actual_vals = response_var.tolist()
+                explan_list = explan_var.tolist()
+
+                resid_frame = sm.calculate_resids(slope, intercept, actual_vals, x_vals=explan_list)
+                over_est = []
+                under_est = []
+
+                for value in resid_frame['resid']:
+                    if value > 0:
+                        over_est.append(value)
+                    elif value < 0:
+                        under_est.append(value)
+
+                avg_over_est = round(np.mean(over_est), 4)
+                avg_under_est = round(np.mean(under_est), 4)
+                avg_resid = round(resid_frame['resid'].mean(), 4)
+
+                fig_cap = f'r: {r_val} r^2: {r_sq} p-value: {p_val} std error: {std_err}\n ' \
+                          f'Avg Overestimate: {avg_over_est} Avg Underestimate: {avg_under_est} ' \
+                          f'Avg residual: {avg_resid}'
+
+                plt.plot(explan_var, slope * explan_var + intercept, color='red')
+                plt.figtext(0.05, 0.005, fig_cap, wrap=True, horizontalalignment='left', fontsize=10)
+                # The plot needs to be made a bit taller to fit the caption
+                plt.gcf().set_size_inches(11, 7)
+
             if do_save:
                 file_name = self.make_file_name_for_plot(subject)
                 try:
@@ -145,6 +170,8 @@ class PlotMaker:
         plt.ylabel("Count")
 
         if xlabels is not []:
+            # Calling plt.xticks() with no args returns a tuple of the x-axis tick locations and there labels
+            # Here we keep the locations the same, but replace the x labels with the specified ones using plt.xticks().
             locations, labels = plt.xticks()
             plt.xticks(locations, xlabels)
             # Ensures that all the words on the boxplot's x-axis render properly
